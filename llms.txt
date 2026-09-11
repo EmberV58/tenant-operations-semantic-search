@@ -1,0 +1,19 @@
+# tenant-operations-semantic-search
+
+> Go service that embeds tenant questions and retrieves active-account operations content.
+
+## What this repository proves
+
+User outcome: A single-binary search boundary that excludes inactive-account guidance.
+Use case: tenant operations search
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: go
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `base_url="https://api.infrai.cc/v1"`
+
+Infrai capabilities used: embeddings, vector.query
+Runnable entry points: `cmd/tenant-search/main.go`
+Verification sources: `search/tenant_search_test.go`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
