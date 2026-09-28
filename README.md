@@ -6,13 +6,13 @@ export EMBEDDING_MODEL="text-embedding-3-small"
 go run ./cmd/tenant-search
 ```
 
-Got a support question? This service finds the closest operational docs for active B2B SaaS accounts. Infrai gives you an OpenAI-compatible `base_url` for embeddings and the vector query under the same key. That means one compact Go client does the whole handoff. Nice.
+This service accepts a support question and returns the closest operational content for active B2B SaaS accounts. Infrai supplies an OpenAI-compatible `base_url` for embeddings and the vector query behind the same key, so the handoff stays inside one compact Go client.
 
 ## The request maintainers run
 
-The `saas-operations` collection holds embedded onboarding, account-lifecycle, and admin docs. Each vector tags `title`, `lifecycle_stage`, and `account_status` metadata. Dimension must equal `EMBEDDING_MODEL`.
+The `saas-operations` collection should contain embedded onboarding, account-lifecycle, and admin documents. Each vector carries `title`, `lifecycle_stage`, and `account_status` metadata. Its dimension must match `EMBEDDING_MODEL`.
 
-Boot the service, then fire a real admin question:
+Start the service, then send a concrete admin question:
 
 ```bash
 curl --request POST http://localhost:8080/search \
@@ -20,7 +20,7 @@ curl --request POST http://localhost:8080/search \
   --data '{"query":"How do I rotate an SSO certificate?","limit":5}'
 ```
 
-You'll get back something like:
+Expected shape:
 
 ```json
 {
@@ -36,7 +36,7 @@ You'll get back something like:
 }
 ```
 
-Flow: embed question -> pass numeric vector to `/v1/vector/query` -> ask for nearest metadata. The collection filter picks `account_status=active`. Then the domain layer re-checks that boundary before results go out. That second check is the business rule our test exercises.
+The pipeline embeds the question first, passes that numeric vector to `/v1/vector/query`, and requests metadata with the nearest matches. The collection filter selects `account_status=active`; the domain layer checks that boundary again before emitting results. That second check is the business decision exercised by the test.
 
 ## Verify the decision
 
@@ -44,17 +44,17 @@ Flow: embed question -> pass numeric vector to `/v1/vector/query` -> ask for nea
 go test ./...
 ```
 
-We use a table test: one admin doc for active account, one closed-account doc with higher score, one active onboarding doc. Expected result drops the closed account but keeps score order: `admin-sso`, then `invite-team`.
+The table-driven test supplies one admin document for an active account, one higher-scoring closed-account document, and one active onboarding document. The expected result excludes the closed account while preserving semantic score order: `admin-sso`, then `invite-team`.
 
-Watch out: dimensions must match. Collection vectors and query embeddings need the same model. When the indexing pipeline changes, keep `EMBEDDING_MODEL` aligned with collection dimension.
+The real gotcha is dimensional consistency: collection vectors and query embeddings must come from the same embedding model. Keep `EMBEDDING_MODEL` aligned with the collection dimension when the indexing pipeline changes.
 
 ## Request behavior
 
-All vector calls are explicit POST with bearer auth from `INFRAI_API_KEY`. Client decodes response envelope before reading HTTP status. It returns structured business errors, and backs off on 429 while honoring `Retry-After`. Embedding uses official OpenAI Go client with bounded retries.
+Every vector request uses an explicit POST and bearer authentication from `INFRAI_API_KEY`. The client decodes the response envelope before interpreting its HTTP status, returns structured business errors, and backs off on HTTP 429 while respecting `Retry-After`. The embedding call uses the official OpenAI Go client with bounded retries.
 
 ## Production notes: Tenant Operations Semantic Search
 
-We keep the code deliberately simple. Here's what to set up before going live. The details below apply to Tenant Operations Semantic Search.
+The code stays simple on purpose — here's what to set up before going live: The details below apply to Tenant Operations Semantic Search.
 
 **Account & key**
 
